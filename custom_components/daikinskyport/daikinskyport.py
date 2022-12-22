@@ -190,13 +190,13 @@ class DaikinSkyport(object):
         sensors.append({"name": f"{name} Outdoor", "value": round(thermostat['ctOutdoorFrequencyInPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "frequency_percent"})
         sensors.append({"name": f"{name} Indoor", "value": thermostat['tempIndoor'], "type": "temperature"})
         sensors.append({"name": f"{name} Indoor", "value": thermostat['humIndoor'], "type": "humidity"})
-        sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctIFCFanRequestedDemandPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
-        sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctIFCCurrentFanActualStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
-        sensors.append({"name": f"{name} Indoor cooling", "value": round(thermostat['ctIFCCoolRequestedDemandPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctAHFanRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctAHFanCurrentDemandStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
+        sensors.append({"name": f"{name} Indoor cooling", "value": round(thermostat['ctOutdoorCoolRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
         sensors.append({"name": f"{name} Indoor cooling", "value": round(thermostat['ctIFCCurrentCoolActualStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
-        sensors.append({"name": f"{name} Indoor furnace", "value": round(thermostat['ctIFCHeatRequestedDemandPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
-        sensors.append({"name": f"{name} Indoor furnace", "value": round(thermostat['ctIFCCurrentHeatActualStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
-        sensors.append({"name": f"{name} Indoor humidifier", "value": round(thermostat['ctIFCHumRequestedDemandPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        sensors.append({"name": f"{name} Indoor heating", "value": round(thermostat['ctAHHeatRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        sensors.append({"name": f"{name} Indoor heating", "value": round(thermostat['ctAHHeatCurrentDemandStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
+        sensors.append({"name": f"{name} Indoor humidifier", "value": round(thermostat['ctAHHumidificationRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
         sensors.append({"name": f"{name} Indoor dehumidifier", "value": round(thermostat['ctIFCDehumRequestedDemandPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
         sensors.append({"name": f"{name} Indoor", "value": thermostat['ctIndoorPower'], "type": "power"})
         if self.thermostats[index]['aqOutdoorAvailable']:
@@ -207,7 +207,7 @@ class DaikinSkyport(object):
             sensors.append({"name": f"{name} Indoor", "value": thermostat['aqIndoorParticlesValue'], "type": "particle"})
             sensors.append({"name": f"{name} Indoor", "value": thermostat['aqIndoorValue'], "type": "score"})
             sensors.append({"name": f"{name} Indoor", "value": thermostat['aqIndoorVOCValue'], "type": "VOC"})
-            
+
         return sensors
 
     def write_tokens_to_file(self):
@@ -310,7 +310,7 @@ class DaikinSkyport(object):
         return self.make_request(index, body, log_msg_action)
 
     def set_permanent_hold(self, index, cool_temp=None, heat_temp=None):
-        ''' Set a climate hold - ie enable/disable schedule. 
+        ''' Set a climate hold - ie enable/disable schedule.
         active values are true/false
         hold_duration is NEXT_SCHEDULE'''
         if cool_temp is None:
@@ -350,10 +350,10 @@ class DaikinSkyport(object):
         return self.make_request(index, body, log_msg_action)
 
     def set_fan_schedule(self, index, start, stop, interval, speed):
-        ''' Schedule to run the fan.  
+        ''' Schedule to run the fan.
         start_time is the beginning of the schedule per day.  It is an integer value where every 15 minutes from 00:00 is 1 (each hour = 4)
         end_time is the end of the schedule each day.  Values are same as start_time
-        interval is the run time per hour of the schedule. Options are on the full time (0), 5mins (1), 15mins (2), 30mins (3), and 45mins (4) 
+        interval is the run time per hour of the schedule. Options are on the full time (0), 5mins (1), 15mins (2), 30mins (3), and 45mins (4)
         speed is low (0) medium (1) or high (2)'''
         body = {"fanCirculateStart": start,
                 "fanCirculateStop": stop,
