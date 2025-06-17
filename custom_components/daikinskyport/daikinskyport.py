@@ -256,6 +256,24 @@ class DaikinSkyport(object):
             sensors.append({"name": f"{name} Indoor furnace blower", "value": thermostat['ctIFCIndoorBlowerAirflow'], "type": "airflow"})
         if "ctAHCurrentIndoorAirflow" in thermostat:
             sensors.append({"name": f"{name} Indoor air handler blower", "value": thermostat['ctAHCurrentIndoorAirflow'], "type": "airflow"})
+        if "ctAHLiquidTemperature" in thermostat:
+            sensors.append({"name": f"{name} Indoor liquid", "value": round(((thermostat['ctAHLiquidTemperature']/10)-32)*(5/9), 1), "type": "temperature"})
+        if "ctOutdoorLiquidTemperature" in thermostat:
+            sensors.append({"name": f"{name} Outdoor liquid", "value": round(((thermostat['ctOutdoorLiquidTemperature']/10)-32)*(5/9) ,1), "type": "temperature"})
+        if "ctAHFanRequestedDemand" in thermostat:
+            sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctAHFanRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        if "ctAHFanCurrentDemandStatus" in thermostat:
+            sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctAHFanCurrentDemandStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
+        if "ctAHHeatRequestedDemand" in thermostat:
+            sensors.append({"name": f"{name} Indoor heating", "value": round(thermostat['ctAHHeatRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        if "ctAHHeatCurrentDemandStatus" in thermostat:
+            sensors.append({"name": f"{name} Indoor heating", "value": round(thermostat['ctAHHeatCurrentDemandStatus'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "actual_status"})
+        if "ctAHHumidificationRequestedDemand" in thermostat:
+            sensors.append({"name": f"{name} Indoor humidifier", "value": round(thermostat['ctAHHumidificationRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        if "ctControlAlgorithmHeatDemand" in thermostat:
+            sensors.append({"name": f"{name} Heating", "value": round(thermostat['ctControlAlgorithmHeatDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
+        if "ctControlAlgorithmCoolDemand" in thermostat:
+            sensors.append({"name": f"{name} Cooling", "value": round(thermostat['ctControlAlgorithmCoolDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
 
         ''' if equipment is idle, set power to zero rather than accept bogus data '''
         if thermostat['equipmentStatus'] == 5:
@@ -418,7 +436,7 @@ class DaikinSkyport(object):
         return self.make_request(index, body, log_msg_action)
 
     def set_permanent_hold(self, index, cool_temp=None, heat_temp=None):
-        ''' Set a climate hold - ie enable/disable schedule. 
+        ''' Set a climate hold - ie enable/disable schedule.
         active values are true/false
         hold_duration is NEXT_SCHEDULE'''
         if cool_temp is None:
@@ -465,10 +483,10 @@ class DaikinSkyport(object):
         return self.make_request(index, body, log_msg_action)
 
     def set_fan_schedule(self, index, start, stop, interval, speed):
-        ''' Schedule to run the fan.  
+        ''' Schedule to run the fan.
         start_time is the beginning of the schedule per day.  It is an integer value where every 15 minutes from 00:00 is 1 (each hour = 4)
         end_time is the end of the schedule each day.  Values are same as start_time
-        interval is the run time per hour of the schedule. Options are on the full time (0), 5mins (1), 15mins (2), 30mins (3), and 45mins (4) 
+        interval is the run time per hour of the schedule. Options are on the full time (0), 5mins (1), 15mins (2), 30mins (3), and 45mins (4)
         speed is low (0) medium (1) or high (2)'''
         body = {"fanCirculateStart": start,
                 "fanCirculateStop": stop,
@@ -501,4 +519,3 @@ class DaikinSkyport(object):
 
         log_msg_action = "set humidity level"
         return self.make_request(index, body, log_msg_action)
-    
