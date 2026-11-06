@@ -16,6 +16,41 @@ logger = logging.getLogger('daikinskyport')
 
 NEXT_SCHEDULE = 1
 
+# Values used by the Skyport API to indicate that a measurement is unavailable.
+INVALID_SENSOR_VALUES = {127.5, 255, 65535, 655350}
+
+
+def is_valid_sensor_value(sensor_type, value):
+    """Return whether a converted sensor value is safe to publish."""
+    if value is None or isinstance(value, bool):
+        return False
+
+    if not isinstance(value, (int, float)):
+        return False
+
+    if value in INVALID_SENSOR_VALUES:
+        return False
+
+    if sensor_type in {
+        "temperature",
+        "humidity",
+        "demand",
+        "frequency_percent",
+        "actual_status",
+    }:
+        if sensor_type == "temperature":
+            return -100 <= value <= 100
+        return 0 <= value <= 100
+
+    if sensor_type in {"power", "airflow", "particle", "ozone", "score"}:
+        return value >= 0
+
+    if sensor_type == "fault_code":
+        return value >= 0
+
+    return True
+
+
 class ExpiredTokenError(Exception):
     """Raised when Daikin Skyport API returns a code indicating expired credentials."""
 
@@ -318,7 +353,13 @@ class DaikinSkyport(object):
             if fault_key in thermostat:
                 sensors.append({"name": f"{name} {fault_name}", "value": thermostat[fault_key], "type": "fault_code"})
 
-        return sensors
+        # Filter invalid and sentinel values after all API unit conversions have
+        # been applied. This keeps bad readings out of Home Assistant while
+        # preserving legitimate zero values.
+        return [
+            sensor for sensor in sensors
+            if is_valid_sensor_value(sensor["type"], sensor["value"])
+        ]
 
     def write_tokens_to_file(self):
         ''' Write api tokens to a file '''
