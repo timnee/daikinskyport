@@ -45,10 +45,23 @@ def is_valid_sensor_value(sensor_type, value):
     if sensor_type in {"power", "airflow", "particle", "ozone", "score"}:
         return value >= 0
 
+    if sensor_type == "pressure":
+        return 0 <= value <= 1000
+
     if sensor_type == "fault_code":
         return value >= 0
 
     return True
+
+
+def fahrenheit_tenths_to_celsius(value):
+    """Convert a Skyport temperature encoded as tenths of Fahrenheit."""
+    return round(((value / 10) - 32) * 5 / 9, 1)
+
+
+def fahrenheit_difference_tenths_to_celsius(value):
+    """Convert a Skyport temperature difference encoded as tenths of Fahrenheit."""
+    return round((value / 10) * 5 / 9, 1)
 
 
 class ExpiredTokenError(Exception):
@@ -296,15 +309,31 @@ class DaikinSkyport(object):
         if "ctIFCDehumRequestedDemandPercent" in thermostat:
             sensors.append({"name": f"{name} Indoor dehumidifier", "value": round(thermostat['ctIFCDehumRequestedDemandPercent'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
         if "ctOutdoorAirTemperature" in thermostat:
-            sensors.append({"name": f"{name} Outdoor air", "value": round(((thermostat['ctOutdoorAirTemperature'] / 10) - 32) * 5 / 9, 1), "type": "temperature"})
+            sensors.append({"name": f"{name} Outdoor air", "value": fahrenheit_tenths_to_celsius(thermostat["ctOutdoorAirTemperature"]), "type": "temperature"})
         if "ctIFCIndoorBlowerAirflow" in thermostat:
             sensors.append({"name": f"{name} Indoor furnace blower", "value": thermostat['ctIFCIndoorBlowerAirflow'], "type": "airflow"})
         if "ctAHCurrentIndoorAirflow" in thermostat:
             sensors.append({"name": f"{name} Indoor air handler blower", "value": thermostat['ctAHCurrentIndoorAirflow'], "type": "airflow"})
         if "ctAHLiquidTemperature" in thermostat:
-            sensors.append({"name": f"{name} Indoor liquid", "value": round(((thermostat['ctAHLiquidTemperature']/10)-32)*(5/9), 1), "type": "temperature"})
+            sensors.append({"name": f"{name} Indoor liquid", "value": fahrenheit_tenths_to_celsius(thermostat["ctAHLiquidTemperature"]), "type": "temperature"})
         if "ctOutdoorLiquidTemperature" in thermostat:
-            sensors.append({"name": f"{name} Outdoor liquid", "value": round(((thermostat['ctOutdoorLiquidTemperature']/10)-32)*(5/9) ,1), "type": "temperature"})
+            sensors.append({"name": f"{name} Outdoor liquid", "value": fahrenheit_tenths_to_celsius(thermostat["ctOutdoorLiquidTemperature"]), "type": "temperature"})
+        if "ctAHSuctionTemperature" in thermostat:
+            sensors.append({"name": f"{name} Indoor suction", "value": fahrenheit_tenths_to_celsius(thermostat["ctAHSuctionTemperature"]), "type": "temperature"})
+        if "ctOutdoorSuctionTemperature" in thermostat:
+            sensors.append({"name": f"{name} Outdoor suction", "value": fahrenheit_tenths_to_celsius(thermostat["ctOutdoorSuctionTemperature"]), "type": "temperature"})
+        if "ctOutdoorCoilTemperature" in thermostat:
+            sensors.append({"name": f"{name} Outdoor coil", "value": fahrenheit_tenths_to_celsius(thermostat["ctOutdoorCoilTemperature"]), "type": "temperature"})
+        if "ctOutdoorDischargeTemperature" in thermostat:
+            sensors.append({"name": f"{name} Outdoor discharge", "value": fahrenheit_tenths_to_celsius(thermostat["ctOutdoorDischargeTemperature"]), "type": "temperature"})
+        if "ctAHPressureSensor" in thermostat:
+            sensors.append({"name": f"{name} Indoor refrigerant pressure", "value": thermostat["ctAHPressureSensor"], "type": "pressure"})
+        if "ctOutdoorSuctionPressure" in thermostat:
+            sensors.append({"name": f"{name} Outdoor suction pressure", "value": thermostat["ctOutdoorSuctionPressure"], "type": "pressure"})
+        if "ctAHSuperHeatValue" in thermostat:
+            sensors.append({"name": f"{name} Indoor superheat", "value": fahrenheit_difference_tenths_to_celsius(thermostat["ctAHSuperHeatValue"]), "type": "temperature_difference"})
+        if "ctAHSubCoolValue" in thermostat:
+            sensors.append({"name": f"{name} Indoor subcool", "value": fahrenheit_difference_tenths_to_celsius(thermostat["ctAHSubCoolValue"]), "type": "temperature"})
         if "ctAHFanRequestedDemand" in thermostat:
             sensors.append({"name": f"{name} Indoor fan", "value": round(thermostat['ctAHFanRequestedDemand'] / DAIKIN_PERCENT_MULTIPLIER, 1), "type": "demand"})
         if "ctAHFanCurrentDemandStatus" in thermostat:
