@@ -21,6 +21,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.device_registry import DeviceInfo
 from . import DaikinSkyportData
+from .daikinskyport import is_valid_sensor_value
 
 from .const import (
     _LOGGER,
@@ -40,6 +41,12 @@ SENSOR_TYPES = {
         "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:thermometer",
+    },
+    "temperature_difference": {
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer-lines",
     },
     "humidity": {
         "device_class": SensorDeviceClass.HUMIDITY,
@@ -144,10 +151,13 @@ async def async_setup_entry(
     for index in range(len(coordinator.daikinskyport.thermostats)):
         sensors = coordinator.daikinskyport.get_sensors(index)
         for sensor in sensors:
-            if sensor["type"] not in ("temperature", "humidity", "score",
-                                      "ozone", "particle", "VOC", "demand",
-                                      "power", "frequency_percent","actual_status",
-                                      "airflow", "fault_code", "pressure") or sensor["value"] == 127.5 or sensor["value"] == 65535:
+            if sensor["type"] not in ("temperature", "temperature_difference", "humidity", "score",
+                                       "ozone", "particle", "VOC", "demand",
+                                       "power", "frequency_percent","actual_status",
+                                       "airflow", "fault_code", "pressure") or (
+                                           not sensor.get("create_if_unavailable")
+                                           and not is_valid_sensor_value(sensor["type"], sensor["value"])
+                                       ):
                 continue
             async_add_entities([DaikinSkyportSensor(coordinator, sensor["name"], sensor["type"], index)], True)
 
@@ -181,7 +191,7 @@ class DaikinSkyportSensor(SensorEntity):
     def device_class(self):
         """Return the device class of the sensor."""
         if self._type in SENSOR_TYPES:
-            return self._type
+            return SENSOR_TYPES[self._type]["device_class"]
         return None
 
     @property
@@ -214,5 +224,7 @@ class DaikinSkyportSensor(SensorEntity):
                         continue
                     else:
                         self._state = sensor["value"]
-                elif not sensor["value"] == 65535 and not sensor["value"] == 655350:
+                elif is_valid_sensor_value(sensor["type"], sensor["value"]):
                     self._state = sensor["value"]
+                else:
+                    self._state = None
