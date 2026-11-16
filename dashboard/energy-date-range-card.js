@@ -80,7 +80,17 @@ class EnergyDateRangeCard extends HTMLElement {
       const helpers = await window.loadCardHelpers();
       await helpers.createCardElement({ type: "energy-date-selection" });
       if (!customElements.get("ha-date-range-picker")) {
-        throw new Error("This Home Assistant version does not expose its calendar.");
+        let timeout;
+        try {
+          await Promise.race([
+            customElements.whenDefined("ha-date-range-picker"),
+            new Promise((_, reject) => {
+              timeout = setTimeout(() => reject(new Error("The native calendar did not load.")), 15000);
+            }),
+          ]);
+        } finally {
+          clearTimeout(timeout);
+        }
       }
       this.shadowRoot.innerHTML = `
         <style>
