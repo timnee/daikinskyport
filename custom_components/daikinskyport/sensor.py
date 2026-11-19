@@ -43,7 +43,7 @@ SENSOR_TYPES = {
         "icon": "mdi:thermometer",
     },
     "temperature_difference": {
-        "device_class": SensorDeviceClass.TEMPERATURE,
+        "device_class": SensorDeviceClass.TEMPERATURE_DELTA,
         "native_unit_of_measurement": UnitOfTemperature.CELSIUS,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:thermometer-lines",
@@ -167,7 +167,13 @@ class DaikinSkyportSensor(SensorEntity):
     def __init__(self, data, sensor_name, sensor_type, sensor_index):
         """Initialize the sensor."""
         self.data = data
-        self._name = f"{sensor_name} {SENSOR_TYPES[sensor_type]['device_class']}"
+        # Keep existing names and unique IDs when the difference device class changes.
+        name_suffix = (
+            SensorDeviceClass.TEMPERATURE
+            if sensor_type == "temperature_difference"
+            else SENSOR_TYPES[sensor_type]["device_class"]
+        )
+        self._name = f"{sensor_name} {name_suffix}"
         self._attr_unique_id = f"{data.daikinskyport.thermostats[sensor_index]['id']}-{self._name}"
         self._model = f"{data.daikinskyport.thermostats[sensor_index]['model']}"
         self._sensor_name = sensor_name
